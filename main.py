@@ -1,7 +1,8 @@
 import zapret
-import tkinter as tk
 import sys
 import ctypes
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton
+from PySide6.QtCore import Qt
 
 def is_admin():
     try:
@@ -24,22 +25,38 @@ if not is_admin():
     restart_as_admin()
 
 
-root = tk.Tk()
-root.geometry("300x300")
-root.title("Roblox Zapr")
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
 
-def start():
-    zapret.start()
-    button.config(text="stop",command=stop)
+        self.setWindowTitle("Roblox Zapr")
+        self.setFixedSize(300, 300)
+
+        self.button = QPushButton("Start", self)
+        self.button.setGeometry(100, 130, 100, 40)
+        self.button.clicked.connect(self.start)
+
+    def start(self):
+        zapret.start()
+        self.button.setText("Stop")
+        self.button.clicked.disconnect()
+        self.button.clicked.connect(self.stop)
+
+    def stop(self):
+        zapret.stop()
+        self.button.setText("Start")
+        self.button.clicked.disconnect()
+        self.button.clicked.connect(self.start)
+
+    def closeEvent(self, event):
+        try:
+            zapret.stop()
+        except:
+            pass
+        event.accept()
 
 
-def stop():
-    zapret.stop()
-    button.config(text="Start",command=start)
-
-
-button = tk.Button(root, text="Start", command=start)
-button.pack()
-
-root.mainloop()
-stop()
+app = QApplication(sys.argv)
+window = MainWindow()
+window.show()
+sys.exit(app.exec())
