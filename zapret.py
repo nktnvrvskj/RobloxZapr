@@ -3,6 +3,12 @@ import psutil
 import ctypes
 import sys
 import os
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -78,16 +84,6 @@ def is_admin():
     except:
         return False
 
-def restart_as_admin():
-    ctypes.windll.shell32.ShellExecuteW(
-        None,
-        "runas",
-        sys.executable,
-        " ".join(sys.argv),
-        None,
-        1
-    )
-    sys.exit(0)
 
 def is_running():
     for p in psutil.process_iter(['name']):
@@ -97,7 +93,8 @@ def is_running():
 
 def start():
     if is_running():
-        print("winws.exe уже запущен")
+        logging.info("winws.exe уже запущен")
+
         return
 
     subprocess.Popen(
@@ -106,7 +103,8 @@ def start():
         creationflags=subprocess.CREATE_NEW_CONSOLE
     )
 
-    print("winws.exe запущен")
+    logging.info("winws.exe запущен")
+
 
 def stop():
     found = False
@@ -116,10 +114,7 @@ def stop():
             found = True
 
     if found:
-        print("winws.exe остановлен")
-    else:
-        print("winws.exe не найден")
 
-if __name__ == "__main__":
-    if not is_admin():
-        restart_as_admin()
+        logging.info("winws.exe остановлен")
+    else:
+        logging.error("winws.exe не найден")
