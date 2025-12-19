@@ -17,7 +17,7 @@ if getattr(sys, "frozen", False):
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Динамическая загрузка configs.py
+# Динамическая загрузка configs.py (НЕ компилируется)
 CONFIGS_PATH = os.path.join(BASE_DIR, "configs.py")
 if not os.path.exists(CONFIGS_PATH):
     raise FileNotFoundError(f"configs.py не найден рядом с {BASE_DIR}")
@@ -53,18 +53,25 @@ def start(config_name: str):
         return
 
     if not os.path.exists(WINWS_PATH):
-        logging.error(f"winws.exe не найден по пути: {WINWS_PATH}")
+        logging.error(f"winws.exe не найден: {WINWS_PATH}")
         return
 
     args = CONFIGS[config_name]
-    logging.info(f"Запуск: {WINWS_PATH} с args: {args}")
+    logging.info(f"Запуск winws.exe без окна")
+
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = subprocess.SW_HIDE
 
     subprocess.Popen(
         [WINWS_PATH] + args,
         cwd=BIN_DIR,
-        creationflags=subprocess.CREATE_NEW_CONSOLE
+        startupinfo=startupinfo,
+        creationflags=subprocess.CREATE_NO_WINDOW
     )
+
     logging.info(f"winws.exe запущен с конфигурацией: {config_name}")
+
 
 def stop():
     found = False
