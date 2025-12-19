@@ -1,82 +1,35 @@
+import os
+import sys
 import subprocess
 import psutil
 import ctypes
-import sys
-import os
 import logging
+import importlib.util
 
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s | %(levelname)s | %(message)s"
 )
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Определяем папку exe или скрипта
+if getattr(sys, "frozen", False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-BIN_DIR = os.path.join(BASE_DIR, "bin")
+# Динамическая загрузка configs.py
+CONFIGS_PATH = os.path.join(BASE_DIR, "configs.py")
+if not os.path.exists(CONFIGS_PATH):
+    raise FileNotFoundError(f"configs.py не найден рядом с {BASE_DIR}")
+
+spec = importlib.util.spec_from_file_location("configs", CONFIGS_PATH)
+configs = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(configs)
+
+CONFIGS = configs.CONFIGS
+BIN_DIR = configs.BIN_DIR
+
 WINWS_PATH = os.path.join(BIN_DIR, "winws.exe")
-
-LIST_PATH = os.path.join(BASE_DIR, "lists", "list-ultimate.txt")
-DISCORD_IPSET_PATH = os.path.join(BASE_DIR, "lists", "ipset-discord.txt")
-CLOUDFLARE_IPSET_PATH = os.path.join(BASE_DIR,"lists", "ipset-cloudflare.txt")
-
-QUIC_GOOGLE = os.path.join(BIN_DIR, "quic_initial_www_google_com.bin")
-TLS_GOOGLE = os.path.join(BIN_DIR, "tls_clienthello_www_google_com.bin")
-
-ARGS = [
-    "--wf-tcp=80,4433",
-    "--wf-udp=443,1400,596-599,50000-50100",
-
-    "--filter-udp=443",
-    f'--hostlist={LIST_PATH}',
-    "--dpi-desync=fake",
-    "--dpi-desync-repeats=6",
-    f'--dpi-desync-fake-quic={QUIC_GOOGLE}',
-    "--new",
-
-    "--filter-udp=1400,596-599,50000-50100",
-    f'--ipset={DISCORD_IPSET_PATH}',
-    "--dpi-desync=fake",
-    "--dpi-desync-any-protocol",
-    "--dpi-desync-cutoff=d3",
-    "--dpi-desync-repeats=6",
-    "--new",
-
-    "--filter-tcp=80",
-    f'--hostlist={LIST_PATH}',
-    "--dpi-desync=fake,split2",
-    "--dpi-desync-autottl=2",
-    "--dpi-desync-fooling=md5sig",
-    "--new",
-
-    "--filter-tcp=443",
-    f'--hostlist={LIST_PATH}',
-    "--dpi-desync=split2",
-    "--dpi-desync-split-seqovl=652",
-    "--dpi-desync-split-pos=2",
-    f'--dpi-desync-split-seqovl-pattern={TLS_GOOGLE}',
-    "--new",
-
-    "--filter-udp=443",
-    f'--ipset={CLOUDFLARE_IPSET_PATH}',
-    "--dpi-desync=fake",
-    "--dpi-desync-repeats=6",
-    f'--dpi-desync-fake-quic={QUIC_GOOGLE}',
-    "--new",
-
-    "--filter-tcp=80",
-    f'--ipset={CLOUDFLARE_IPSET_PATH}',
-    "--dpi-desync=fake,split2",
-    "--dpi-desync-autottl=2",
-    "--dpi-desync-fooling=md5sig",
-    "--new",
-
-    "--filter-tcp=443",
-    f'--ipset={CLOUDFLARE_IPSET_PATH}',
-    "--dpi-desync=split2",
-    "--dpi-desync-split-seqovl=652",
-    "--dpi-desync-split-pos=2",
-    f'--dpi-desync-split-seqovl-pattern={TLS_GOOGLE}',
-]
 
 def is_admin():
     try:
@@ -84,27 +37,34 @@ def is_admin():
     except:
         return False
 
-
 def is_running():
     for p in psutil.process_iter(['name']):
         if p.info['name'] == 'winws.exe':
             return True
     return False
 
-def start():
-    if is_running():
-        logging.info("winws.exe уже запущен")
-
+def start(config_name: str):
+    if config_name not in CONFIGS:
+        logging.error("Конфигурация не найдена")
         return
 
+    if is_running():
+        logging.info("winws.exe уже запущен")
+        return
+
+    if not os.path.exists(WINWS_PATH):
+        logging.error(f"winws.exe не найден по пути: {WINWS_PATH}")
+        return
+
+    args = CONFIGS[config_name]
+    logging.info(f"Запуск: {WINWS_PATH} с args: {args}")
+
     subprocess.Popen(
-        [WINWS_PATH] + ARGS,
+        [WINWS_PATH] + args,
         cwd=BIN_DIR,
         creationflags=subprocess.CREATE_NEW_CONSOLE
     )
-
-    logging.info("winws.exe запущен")
-
+    logging.info(f"winws.exe запущен с конфигурацией: {config_name}")
 
 def stop():
     found = False
@@ -114,7 +74,6 @@ def stop():
             found = True
 
     if found:
-
         logging.info("winws.exe остановлен")
     else:
         logging.error("winws.exe не найден")
