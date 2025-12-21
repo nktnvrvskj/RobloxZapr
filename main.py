@@ -1,4 +1,5 @@
 import sys
+import os
 import ctypes
 import zapret
 from PySide6.QtWidgets import (
@@ -8,6 +9,11 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QTimer, Qt, QEvent
 from PySide6.QtGui import QIcon
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 def is_admin():
     try:
@@ -69,7 +75,7 @@ class MainWindow(QWidget):
             sys.exit(1)
 
         self.tray = QSystemTrayIcon(self)
-        self.tray.setIcon(QIcon("icon.ico"))
+        self.tray.setIcon(QIcon(resource_path("icon.ico")))
         self.tray.setToolTip("Roblox Zapret")
 
         menu = QMenu()
@@ -77,8 +83,8 @@ class MainWindow(QWidget):
         show_action = menu.addAction("Открыть")
         show_action.triggered.connect(self.show_window)
 
-        exit_action = menu.addAction("Выход")
-        exit_action.triggered.connect(self.exit_app)
+        close_action = menu.addAction("Закрыть")
+        close_action.triggered.connect(self.exit_app)
 
         self.tray.setContextMenu(menu)
         self.tray.activated.connect(self.tray_click)
@@ -135,7 +141,7 @@ class MainWindow(QWidget):
         self.hide()
         self.tray.showMessage(
             "Roblox Zapret",
-            "Приложение свернуто в трей",
+            "Приложение свернуто в трей. Используйте меню трея для выхода.",
             QSystemTrayIcon.Information,
             2000
         )
@@ -147,7 +153,7 @@ class MainWindow(QWidget):
         super().changeEvent(event)
 app = QApplication(sys.argv)
 app.setQuitOnLastWindowClosed(False)
-app.setWindowIcon(QIcon("icon.ico"))
+app.setWindowIcon(QIcon(resource_path("icon.ico")))
 window = MainWindow()
 window.show()
 sys.exit(app.exec())
