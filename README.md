@@ -67,6 +67,16 @@ python main.py
 
 ---
 
+##
+
+```bash
+pyinstaller --noconsole --onefile --icon=icon.ico --add-data "icon.ico;." main.py
+```
+
+---
+
+
+
 ## ⚙️ Конфигурации
 
 - `configs.py` — профили конфигураций
