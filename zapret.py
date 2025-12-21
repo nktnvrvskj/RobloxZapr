@@ -11,13 +11,11 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s"
 )
 
-# Определяем папку exe или скрипта
 if getattr(sys, "frozen", False):
     BASE_DIR = os.path.dirname(sys.executable)
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Динамическая загрузка configs.py (НЕ компилируется)
 CONFIGS_PATH = os.path.join(BASE_DIR, "configs.py")
 if not os.path.exists(CONFIGS_PATH):
     raise FileNotFoundError(f"configs.py не найден рядом с {BASE_DIR}")

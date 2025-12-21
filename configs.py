@@ -1,7 +1,6 @@
 import os
 import sys
 
-# Определяем базовую директорию (для Python или exe)
 if getattr(sys, "frozen", False):
     BASE_DIR = os.path.dirname(sys.executable)
 else:
